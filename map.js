@@ -123,7 +123,13 @@ map.on('load', () => {
 
         // Update circle sizes based on total traffic
         circles
-            .attr('r', d => radiusScale(d.totalTraffic)); // Adjust circle size based on total traffic
+            .attr('r', d => radiusScale(d.totalTraffic)) // Adjust circle size based on total traffic
+            .each(function(d) {
+                // Add <title> for browser tooltips
+                d3.select(this)
+                  .append('title')
+                  .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
+                });
     }).catch(error => {
     console.error('Error loading CSV:', error);  // Handle errors if CSV loading fails
     });

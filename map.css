@@ -27,4 +27,5 @@ html, body {
     fill-opacity: 60%;
     fill: steelblue;
     stroke: white;
+    pointer-events: auto;
 }
