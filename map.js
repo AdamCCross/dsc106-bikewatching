@@ -90,4 +90,41 @@ map.on('load', () => {
       }).catch(error => {
         console.error('Error loading JSON:', error);  // Handle errors if JSON loading fails
       });
+    
+    const tripsURL = "https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv"
+    d3.csv(tripsURL).then(trips => {
+        const departures = d3.rollup(
+            trips,
+            (v) => v.length,
+            (d) => d.start_station_id,
+        );
+
+        // Create a map of arrivals
+        const arrivals = d3.rollup(
+            trips,
+            (v) => v.length,
+            (d) => d.end_station_id // Group by end_station_id
+        );
+
+        // Add traffic data (departures and arrivals) to stations
+        stations = stations.map((station) => {
+            let id = station.short_name;
+            station.arrivals = arrivals.get(id) ?? 0;
+            station.departures = departures.get(id) ?? 0;
+            station.totalTraffic = station.arrivals + station.departures; // Compute total traffic
+            return station;
+        });
+
+        // Update the radius scale for circles based on traffic data
+        const radiusScale = d3
+          .scaleSqrt()
+          .domain([0, d3.max(stations, (d) => d.totalTraffic)])
+          .range([0, 25]);
+
+        // Update circle sizes based on total traffic
+        circles
+            .attr('r', d => radiusScale(d.totalTraffic)); // Adjust circle size based on total traffic
+    }).catch(error => {
+    console.error('Error loading CSV:', error);  // Handle errors if CSV loading fails
+    });
 });

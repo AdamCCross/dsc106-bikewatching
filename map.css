@@ -22,3 +22,9 @@ html, body {
     height: 100%;
     pointer-events: none; /* So we can still pan and move the map */
 }
+
+#map svg circle {
+    fill-opacity: 60%;
+    fill: steelblue;
+    stroke: white;
+}
