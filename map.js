@@ -24,6 +24,12 @@ let timeFilter = -1;
 const timeSlider = document.getElementById('time-slider');
 const selectedTime = document.getElementById('selected-time');
 const anyTimeLabel = document.getElementById('any-time');
+let filteredTrips = [];
+let filteredArrivals = new Map();
+let filteredDepartures = new Map();
+let filteredStations = [];
+var trips = []
+let stations = []
 
 function getCoords(station) {
     const point = new mapboxgl.LngLat(+station.lon, +station.lat);  // Convert lon/lat to Mapbox LngLat
@@ -43,19 +49,7 @@ function formatTime(minutes) {
     return date.toLocaleString('en-US', { timeStyle: 'short' }); // Format as HH:MM AM/PM
 }
 
-function updateTimeDisplay() {
-    timeFilter = Number(timeSlider.value);  // Get slider value
-  
-    if (timeFilter === -1) {
-      selectedTime.textContent = '';  // Clear time display
-      anyTimeLabel.style.display = 'block';  // Show "(any time)"
-    } else {
-      selectedTime.textContent = formatTime(timeFilter);  // Display formatted time
-      anyTimeLabel.style.display = 'none';  // Hide "(any time)"
-    }
-  
-    // Trigger filtering logic which will be implemented in the next step
-}
+
 
 map.on('load', () => { 
     map.addSource('boston_route', {
@@ -85,7 +79,6 @@ map.on('load', () => {
     // Load bike stations
     const jsonurl = "https://dsc106.com/labs/lab07/data/bluebikes-stations.json"
     const svg = d3.select('#map').select('svg');
-    let stations = []
 
     d3.json(jsonurl).then(jsonData => {
         console.log('Loaded JSON Data:', jsonData);  // Log to verify structure
@@ -115,7 +108,13 @@ map.on('load', () => {
       });
     
     const tripsURL = "https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv"
-    d3.csv(tripsURL).then(trips => {
+    d3.csv(tripsURL).then(data => {
+        trips = data.map(trip => ({
+            ...trip,
+            started_at: new Date(trip.start_time),
+            ended_at: new Date(trip.ended_at),
+        }));
+
         const departures = d3.rollup(
             trips,
             (v) => v.length,
@@ -149,15 +148,88 @@ map.on('load', () => {
             .attr('r', d => radiusScale(d.totalTraffic)) // Adjust circle size based on total traffic
             .each(function(d) {
                 // Add <title> for browser tooltips
+                d3.select(this).select('title').remove(); // Remove old title
                 d3.select(this)
                   .append('title')
                   .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
                 });
-        for (let trip of trips) {
-            trip.started_at = new Date(trip.start_time);}
+        console.log("Trips:", trips)
+        function updateTimeDisplay() {
+            timeFilter = Number(timeSlider.value);  // Get slider value
+          
+            if (timeFilter === -1) {
+              selectedTime.textContent = '';  // Clear time display
+              anyTimeLabel.style.display = 'block';  // Show "(any time)"
+            } else {
+              selectedTime.textContent = formatTime(timeFilter);  // Display formatted time
+              anyTimeLabel.style.display = 'none';  // Hide "(any time)"
+            }
+          
+            // Trigger filtering logic which will be implemented in the next step
+            filterTripsbyTime();
+        }
+        
+        function minutesSinceMidnight(date) {
+            return date.getHours() * 60 + date.getMinutes();
+        }
+        
+        function filterTripsbyTime() {
+            filteredTrips = timeFilter === -1
+                ? trips
+                : trips.filter((trip) => {
+                    const startedMinutes = minutesSinceMidnight(trip.started_at);
+                    const endedMinutes = minutesSinceMidnight(trip.ended_at);
+                    return (
+                      Math.abs(startedMinutes - timeFilter) <= 60 ||
+                      Math.abs(endedMinutes - timeFilter) <= 60
+                    );
+                  });
+        
+            filteredDepartures = d3.rollup(
+                filteredTrips,
+                (v) => v.length,
+                (d) => d.start_station_id,
+            );
+        
+            // Create a map of arrivals
+            filteredArrivals = d3.rollup(
+                filteredTrips,
+                (v) => v.length,
+                (d) => d.end_station_id // Group by end_station_id
+            );
+            
+            filteredStations = stations.map((station) => {
+                station = { ...station };
+                let id = station.short_name;
+                station.arrivals = filteredArrivals.get(id) ?? 0;
+                station.departures = filteredDepartures.get(id) ?? 0;
+                station.totalTraffic = station.arrivals + station.departures; // Compute total traffic
+                return station;
+            });
+        
+            // Update the radius scale for circles based on traffic data
+            const radiusScale = d3
+                .scaleSqrt()
+                .domain([0, d3.max(filteredStations, (d) => d.totalTraffic)])
+                .range([0, 25]);
+        
+            // Update circle sizes based on total traffic
+            circles
+                .data(filteredStations)
+                .attr('r', d => radiusScale(d.totalTraffic)) // Adjust circle size based on total traffic
+                .each(function(d) {
+                    // Add <title> for browser tooltips
+                    d3.select(this).select('title').remove(); // Remove old title
+                    d3.select(this)
+                        .append('title')
+                        .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
+                    });
+          
+                // we need to update the station data here explained in the next couple paragraphs
+        }
+        updateTimeDisplay();
+        timeSlider.addEventListener('input', updateTimeDisplay);
     }).catch(error => {
     console.error('Error loading CSV:', error);  // Handle errors if CSV loading fails
     });
-    updateTimeDisplay();
-    timeSlider.addEventListener('input', updateTimeDisplay);
 });
