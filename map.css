@@ -29,3 +29,44 @@ html, body {
     stroke: white;
     pointer-events: auto;
 }
+
+#map svg circle, .legend > div {
+    --color-departures: steelblue;
+    --color-arrivals: darkorange;
+    --color: color-mix(
+    in oklch,
+    var(--color-departures) calc(100% * var(--departure-ratio)),
+    var(--color-arrivals)
+    );
+    fill: var(--color);
+}
+
+.legend {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 100px;
+    margin-block: 20px;
+}
+
+.legend span {
+    font-weight: bold; /* Style for the "Legend:" label */
+    margin-right: 10px; /* Space between the label and items */
+}
+
+.legend-item {
+    display: flex;
+    align-items: center; /* Align text and swatch vertically */
+    gap: 8px; /* Smaller gap between swatch and label */
+    position: relative; /* Required for the pseudo-element positioning */
+}
+
+.legend-item::before {
+    content: ""; /* Create an empty swatch */
+    display: block;
+    width: 20px; /* Swatch width */
+    height: 10px; /* Swatch height */
+    border-radius: 5px; /* Rounded corners */
+    background-color: var(--color); /* Use the dynamic color defined with --color */
+    background: color-mix(in oklch, var(--color-departures) calc(100% * var(--departure-ratio)), var(--color-arrivals));
+}

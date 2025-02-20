@@ -30,6 +30,7 @@ let filteredDepartures = new Map();
 let filteredStations = [];
 var trips = []
 let stations = []
+let stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
 
 function getCoords(station) {
     const point = new mapboxgl.LngLat(+station.lon, +station.lat);  // Convert lon/lat to Mapbox LngLat
@@ -94,7 +95,8 @@ map.on('load', () => {
           .attr('fill', 'steelblue')  // Circle fill color
           .attr('stroke', 'white')    // Circle border color
           .attr('stroke-width', 1)    // Circle border thickness
-          .attr('opacity', 0.8);      // Circle opacity
+          .attr('opacity', 0.8)      // Circle opacity
+          .style("--departure-ratio", d => stationFlow(d.departures / d.totalTraffic));
   
       
           // Reposition markers on map interactions
@@ -216,6 +218,7 @@ map.on('load', () => {
             // Update circle sizes based on total traffic
             circles
                 .data(filteredStations)
+                .style("--departure-ratio", d => stationFlow(d.departures / d.totalTraffic))
                 .attr('r', d => radiusScale(d.totalTraffic)) // Adjust circle size based on total traffic
                 .each(function(d) {
                     // Add <title> for browser tooltips
