@@ -18,8 +18,12 @@ const paintLineStyle = {
     'line-opacity': 0.4
 }
 
-// Declare circles globally to avoid scope issues
+// Declare globally to avoid scope issues
 let circles = null;
+let timeFilter = -1;
+const timeSlider = document.getElementById('time-slider');
+const selectedTime = document.getElementById('selected-time');
+const anyTimeLabel = document.getElementById('any-time');
 
 function getCoords(station) {
     const point = new mapboxgl.LngLat(+station.lon, +station.lat);  // Convert lon/lat to Mapbox LngLat
@@ -32,6 +36,25 @@ function updatePositions() {
     circles
       .attr('cx', d => getCoords(d).cx)  // Set the x-position using projected coordinates
       .attr('cy', d => getCoords(d).cy); // Set the y-position using projected coordinates
+}
+
+function formatTime(minutes) {
+    const date = new Date(0, 0, 0, 0, minutes);  // Set hours & minutes
+    return date.toLocaleString('en-US', { timeStyle: 'short' }); // Format as HH:MM AM/PM
+}
+
+function updateTimeDisplay() {
+    timeFilter = Number(timeSlider.value);  // Get slider value
+  
+    if (timeFilter === -1) {
+      selectedTime.textContent = '';  // Clear time display
+      anyTimeLabel.style.display = 'block';  // Show "(any time)"
+    } else {
+      selectedTime.textContent = formatTime(timeFilter);  // Display formatted time
+      anyTimeLabel.style.display = 'none';  // Hide "(any time)"
+    }
+  
+    // Trigger filtering logic which will be implemented in the next step
 }
 
 map.on('load', () => { 
@@ -130,7 +153,11 @@ map.on('load', () => {
                   .append('title')
                   .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
                 });
+        for (let trip of trips) {
+            trip.started_at = new Date(trip.start_time);}
     }).catch(error => {
     console.error('Error loading CSV:', error);  // Handle errors if CSV loading fails
     });
+    updateTimeDisplay();
+    timeSlider.addEventListener('input', updateTimeDisplay);
 });
