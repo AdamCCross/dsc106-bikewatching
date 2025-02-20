@@ -13,7 +13,18 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
 </head>
 <body>
-    <h1>🚴🏼‍♀️ Bikewatching</h1>
+    <header>
+        <h1>🚴🏼‍♀️ Bikewatching</h1>
+
+        <label>
+            <span>
+                Filter by time:
+                <input type="range" id="time-slider" min="-1" max="1440" value="-1">
+            </span>
+            <em id="any-time">(any time)</em>
+            <time id="selected-time">12:00 AM</time>
+        </label>
+    </header>
 
     <div id="map">
         <svg></svg>

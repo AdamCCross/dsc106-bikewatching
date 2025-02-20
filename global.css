@@ -7,4 +7,33 @@ body {
     box-sizing: border-box;
     margin: auto;
     padding: 1em;
-  }
+}
+
+
+header {
+    display: flex;
+    gap: 1em;
+    align-items: baseline;
+    width: 100%;
+}
+
+label {
+    display: flex;
+    flex-direction: column;
+    margin-left: auto;
+}
+
+input[type="range"] {
+    flex-grow: 1; /* Makes the input take up remaining space */
+    width: 500px; /* Adjust this value to make the input longer */
+}
+
+time, em {
+    margin-left: auto;
+    display: block;
+}
+
+em {
+    color: gray;
+    font-style: italic;
+}
